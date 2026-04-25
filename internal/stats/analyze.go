@@ -2,61 +2,80 @@
 package stats
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
+type fileEntry struct {
+	key  string
+	size int64
+}
+
 // Analyze walks root recursively, counting files grouped by extension.
 // Directories and files matched by any .gitignore found in root are excluded.
-// The .git directory is always skipped.
+// The .git directory is always skipped. Directories are processed concurrently.
 func Analyze(root string) (*Result, error) {
 	gi, _ := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
 
+	results := make(chan fileEntry, 512)
+	var wg sync.WaitGroup
+
+	var walkDir func(dir, rel string)
+	walkDir = func(dir, rel string) {
+		defer wg.Done()
+
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return
+		}
+
+		for _, de := range entries {
+			name := de.Name()
+			entryRel := filepath.Join(rel, name)
+
+			if de.IsDir() {
+				if name == ".git" {
+					continue
+				}
+				if gi != nil && gi.MatchesPath(entryRel) {
+					continue
+				}
+				wg.Add(1)
+				go walkDir(filepath.Join(dir, name), entryRel)
+				continue
+			}
+
+			if gi != nil && gi.MatchesPath(entryRel) {
+				continue
+			}
+
+			info, err := de.Info()
+			if err != nil {
+				continue
+			}
+
+			results <- fileEntry{key: groupKey(name), size: info.Size()}
+		}
+	}
+
+	wg.Add(1)
+	go walkDir(root, "")
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
 	counts := make(map[string]*ExtStat)
-
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
+	for fe := range results {
+		if counts[fe.key] == nil {
+			counts[fe.key] = &ExtStat{Ext: fe.key, Language: languageFor(fe.key)}
 		}
-
-		rel, relErr := filepath.Rel(root, path)
-		if relErr != nil {
-			return nil
-		}
-
-		if d.IsDir() {
-			if d.Name() == ".git" {
-				return filepath.SkipDir
-			}
-			if gi != nil && gi.MatchesPath(rel) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		if gi != nil && gi.MatchesPath(rel) {
-			return nil
-		}
-
-		key := groupKey(d.Name())
-
-		info, err := os.Stat(path)
-		if err != nil {
-			return nil
-		}
-
-		if counts[key] == nil {
-			counts[key] = &ExtStat{Ext: key, Language: languageFor(key)}
-		}
-		counts[key].Files++
-		counts[key].Bytes += info.Size()
-		return nil
-	})
-	if err != nil {
-		return nil, err
+		counts[fe.key].Files++
+		counts[fe.key].Bytes += fe.size
 	}
 
 	result := &Result{}
