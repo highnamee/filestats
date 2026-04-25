@@ -72,29 +72,6 @@ filestats -loc=false -exclude vendor  # fast run, no LOC column
 | `-o file`          | Save results as JSON to a file (table still printed to stdout)              |
 | `-version`         | Print version and exit                                                      |
 
-## Releasing a new version
-
-The release script keeps all versions in sync automatically (formula, git tag, binary ldflags):
-
-```bash
-make release V=1.2.3
-```
-
-This will:
-
-1. Build binaries for all platforms into `dist/`
-2. Compute SHA256 for each binary
-3. Regenerate `Formula/filestats.rb` with the correct version and hashes
-4. Commit the formula and create the git tag `v1.2.3`
-
-Then follow the printed instructions to push and publish:
-
-```bash
-git push origin main v1.2.3
-gh release create v1.2.3 dist/filestats-* --title "v1.2.3"
-# copy Formula/filestats.rb to highnamee/homebrew-filestats and push
-```
-
 ## Example output
 
 Default (grouped by extension):
