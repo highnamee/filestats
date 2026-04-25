@@ -42,19 +42,45 @@ go run . -l
 go run . -l /path/to/project
 ```
 
+Output as JSON:
+
+```bash
+go run . -json
+go run . -json /path/to/project
+```
+
+Save JSON to a file (table is still printed to stdout):
+
+```bash
+go run . -o stats.json
+go run . -o stats.json /path/to/project
+```
+
+Flags compose freely:
+
+```bash
+go run . -l -json              # language-grouped JSON to stdout
+go run . -l -o stats.json      # language-grouped table + save JSON
+go run . -l -json -o stats.json # language-grouped JSON to stdout + save JSON
+```
+
 Or using the built binary:
 
 ```bash
 ./filestats
 ./filestats /path/to/project
 ./filestats -l /path/to/project
+./filestats -json /path/to/project
+./filestats -o stats.json /path/to/project
 ```
 
 ## Options
 
-| Flag | Description                                                                 |
-| ---- | --------------------------------------------------------------------------- |
-| `-l` | Group results by language; Extension(s) column shows a comma-separated list |
+| Flag       | Description                                                                 |
+| ---------- | --------------------------------------------------------------------------- |
+| `-l`       | Group results by language; Extension(s) column shows a comma-separated list |
+| `-json`    | Print results as JSON to stdout instead of table                            |
+| `-o file`  | Save results as JSON to a file (table still printed to stdout)              |
 
 ## Example output
 
