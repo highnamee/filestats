@@ -21,6 +21,8 @@ func main() {
 	outFile := flag.String("o", "", "save results as JSON to `file`")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	top := flag.Int("top", 0, "show only the top `N` results (0 = all)")
+	var excludes cli.StringsFlag
+	flag.Var(&excludes, "exclude", "exclude files/dirs matching `pattern` (glob; repeatable, comma-separated)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: filestats [flags] [path]\n\n")
@@ -42,7 +44,7 @@ func main() {
 
 	start := time.Now()
 
-	result, err := stats.Analyze(root)
+	result, err := stats.Analyze(root, []string(excludes))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

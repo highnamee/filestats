@@ -39,12 +39,15 @@ make release                        # cross-compile to dist/ for all platforms
 ## Run
 
 ```bash
-filestats                        # analyze current directory
-filestats /path/to/project       # analyze a specific path
-filestats -l /path/to/project    # group by language
-filestats -json /path/to/project # output as JSON
-filestats -o stats.json /path    # save JSON to file, print table
-filestats -version               # print version
+filestats                                       # analyze current directory
+filestats /path/to/project                      # analyze a specific path
+filestats -l /path/to/project                   # group by language
+filestats -json /path/to/project                # output as JSON
+filestats -o stats.json /path                   # save JSON to file, print table
+filestats -version                              # print version
+filestats -exclude vendor                       # skip vendor directory
+filestats -exclude vendor,node_modules          # skip multiple patterns
+filestats -exclude vendor -exclude "*.min.js"   # repeatable flag form
 ```
 
 Flags compose freely:
@@ -52,17 +55,19 @@ Flags compose freely:
 ```bash
 filestats -l -json              # language-grouped JSON to stdout
 filestats -l -o stats.json      # language-grouped table + save JSON
+filestats -l -exclude vendor    # language-grouped, vendor excluded
 ```
 
 ## Options
 
-| Flag         | Description                                                                 |
-| ------------ | --------------------------------------------------------------------------- |
-| `-l`         | Group results by language; Extension(s) column shows a comma-separated list |
-| `-top N`     | Show only the top N results; remaining entries are aggregated into Others   |
-| `-json`      | Print results as JSON to stdout instead of table                            |
-| `-o file`    | Save results as JSON to a file (table still printed to stdout)              |
-| `-version`   | Print version and exit                                                      |
+| Flag               | Description                                                                 |
+| ------------------ | --------------------------------------------------------------------------- |
+| `-l`               | Group results by language; Extension(s) column shows a comma-separated list |
+| `-top N`           | Show only the top N results; remaining entries are aggregated into Others   |
+| `-exclude pattern` | Exclude files/dirs matching a glob pattern (repeatable, comma-separated)    |
+| `-json`            | Print results as JSON to stdout instead of table                            |
+| `-o file`          | Save results as JSON to a file (table still printed to stdout)              |
+| `-version`         | Print version and exit                                                      |
 
 ## Releasing a new version
 
@@ -73,6 +78,7 @@ make release V=1.2.3
 ```
 
 This will:
+
 1. Build binaries for all platforms into `dist/`
 2. Compute SHA256 for each binary
 3. Regenerate `Formula/filestats.rb` with the correct version and hashes

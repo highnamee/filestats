@@ -17,8 +17,10 @@ type fileEntry struct {
 // Analyze walks root recursively, counting files grouped by extension.
 // Directories and files matched by any .gitignore found in root are excluded.
 // The .git directory is always skipped. Directories are processed concurrently.
-func Analyze(root string) (*Result, error) {
+// Entries matching any pattern in excludes are also skipped (gitignore semantics).
+func Analyze(root string, excludes []string) (*Result, error) {
 	gi, _ := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
+	excl := ignore.CompileIgnoreLines(excludes...)
 
 	results := make(chan fileEntry, 512)
 	var wg sync.WaitGroup
@@ -36,19 +38,16 @@ func Analyze(root string) (*Result, error) {
 			name := de.Name()
 			entryRel := filepath.Join(rel, name)
 
+			if excl.MatchesPath(entryRel) || (gi != nil && gi.MatchesPath(entryRel)) {
+				continue
+			}
+
 			if de.IsDir() {
 				if name == ".git" {
 					continue
 				}
-				if gi != nil && gi.MatchesPath(entryRel) {
-					continue
-				}
 				wg.Add(1)
 				go walkDir(filepath.Join(dir, name), entryRel)
-				continue
-			}
-
-			if gi != nil && gi.MatchesPath(entryRel) {
 				continue
 			}
 

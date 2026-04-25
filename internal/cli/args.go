@@ -3,6 +3,18 @@ package cli
 
 import "strings"
 
+// StringsFlag is a flag.Value that accumulates repeated -flag values.
+// It also accepts comma-separated values in a single flag invocation.
+type StringsFlag []string
+
+func (f *StringsFlag) String() string { return strings.Join(*f, ",") }
+
+// Set appends one or more comma-separated values to the flag.
+func (f *StringsFlag) Set(v string) error {
+	*f = append(*f, strings.Split(v, ",")...)
+	return nil
+}
+
 // ReorderArgs moves flag arguments before positional arguments so that
 // flag.Parse can see them regardless of where the user placed them.
 // boolFlags lists flag names that take no value (e.g. "l", "json").
