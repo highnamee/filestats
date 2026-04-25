@@ -29,16 +29,16 @@ func TestGroupByLanguage(t *testing.T) {
 	}
 
 	// First row should be Go (most files).
-	go_ := got.Stats[0]
-	if go_.Language != "Go" {
-		t.Errorf("first row language = %q, want Go", go_.Language)
+	goRow := got.Stats[0]
+	if goRow.Language != "Go" {
+		t.Errorf("first row language = %q, want Go", goRow.Language)
 	}
-	if go_.Files != 4 {
-		t.Errorf("Go files = %d, want 4", go_.Files)
+	if goRow.Files != 4 {
+		t.Errorf("Go files = %d, want 4", goRow.Files)
 	}
 	// Extensions are sorted and joined.
-	if !strings.Contains(go_.Ext, ".go") || !strings.Contains(go_.Ext, ".mod") {
-		t.Errorf("Go extensions = %q, want both .go and .mod", go_.Ext)
+	if !strings.Contains(goRow.Ext, ".go") || !strings.Contains(goRow.Ext, ".mod") {
+		t.Errorf("Go extensions = %q, want both .go and .mod", goRow.Ext)
 	}
 
 	ruby := got.Stats[1]
