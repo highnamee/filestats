@@ -1,9 +1,11 @@
-BIN := filestats
+BIN     := filestats
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS := -ldflags "-s -w -X main.version=$(VERSION)"
 
-.PHONY: build run lint fmt test clean
+.PHONY: build run lint fmt test clean release
 
 build:
-	go build -o $(BIN) .
+	go build $(LDFLAGS) -o $(BIN) .
 
 run:
 	go run . $(ARGS)
@@ -19,3 +21,7 @@ test:
 
 clean:
 	rm -f $(BIN)
+
+release:
+	@test -n "$(V)" || (echo "usage: make release V=1.2.3"; exit 1)
+	bash scripts/release.sh $(V)

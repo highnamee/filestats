@@ -2,7 +2,22 @@
 
 Count file statistics by extension, similar to GitHub's language breakdown.
 
-## Requirements
+## Installation
+
+### Homebrew
+
+```bash
+brew tap highnamee/filestats
+brew install filestats
+```
+
+### Build from source
+
+```bash
+go install github.com/highnamee/filestats@latest
+```
+
+## Requirements (development)
 
 - Go 1.21+
 - [golangci-lint](https://golangci-lint.run/welcome/install/) (for linting)
@@ -10,108 +25,98 @@ Count file statistics by extension, similar to GitHub's language breakdown.
 ## Development
 
 ```bash
-make build # compile binary to ./filestats
-make run # run against current directory
-make run ARGS="." # run against a specific path
-make run ARGS="-l" # group by language, current directory
+make build                          # compile binary to ./filestats
+make run                            # run against current directory
+make run ARGS="."                   # run against a specific path
 make run ARGS="-l /path/to/project" # group by language, specific path
-make lint # run golangci-lint
-make fmt # format all Go files
-make test # run tests
-make clean # remove compiled binary
+make lint                           # run golangci-lint
+make fmt                            # format all Go files
+make test                           # run tests
+make clean                          # remove compiled binary
+make release                        # cross-compile to dist/ for all platforms
 ```
 
 ## Run
 
-Analyze the current directory:
-
 ```bash
-go run .
-```
-
-Analyze a specific path:
-
-```bash
-go run . /path/to/project
-```
-
-Group results by language instead of extension:
-
-```bash
-go run . -l
-go run . -l /path/to/project
-```
-
-Output as JSON:
-
-```bash
-go run . -json
-go run . -json /path/to/project
-```
-
-Save JSON to a file (table is still printed to stdout):
-
-```bash
-go run . -o stats.json
-go run . -o stats.json /path/to/project
+filestats                        # analyze current directory
+filestats /path/to/project       # analyze a specific path
+filestats -l /path/to/project    # group by language
+filestats -json /path/to/project # output as JSON
+filestats -o stats.json /path    # save JSON to file, print table
+filestats -version               # print version
 ```
 
 Flags compose freely:
 
 ```bash
-go run . -l -json              # language-grouped JSON to stdout
-go run . -l -o stats.json      # language-grouped table + save JSON
-go run . -l -json -o stats.json # language-grouped JSON to stdout + save JSON
-```
-
-Or using the built binary:
-
-```bash
-./filestats
-./filestats /path/to/project
-./filestats -l /path/to/project
-./filestats -json /path/to/project
-./filestats -o stats.json /path/to/project
+filestats -l -json              # language-grouped JSON to stdout
+filestats -l -o stats.json      # language-grouped table + save JSON
 ```
 
 ## Options
 
-| Flag       | Description                                                                 |
-| ---------- | --------------------------------------------------------------------------- |
-| `-l`       | Group results by language; Extension(s) column shows a comma-separated list |
-| `-json`    | Print results as JSON to stdout instead of table                            |
-| `-o file`  | Save results as JSON to a file (table still printed to stdout)              |
+| Flag         | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `-l`         | Group results by language; Extension(s) column shows a comma-separated list |
+| `-json`      | Print results as JSON to stdout instead of table                            |
+| `-o file`    | Save results as JSON to a file (table still printed to stdout)              |
+| `-version`   | Print version and exit                                                      |
+
+## Releasing a new version
+
+The release script keeps all versions in sync automatically (formula, git tag, binary ldflags):
+
+```bash
+make release V=1.2.3
+```
+
+This will:
+1. Build binaries for all platforms into `dist/`
+2. Compute SHA256 for each binary
+3. Regenerate `Formula/filestats.rb` with the correct version and hashes
+4. Commit the formula and create the git tag `v1.2.3`
+
+Then follow the printed instructions to push and publish:
+
+```bash
+git push origin main v1.2.3
+gh release create v1.2.3 dist/filestats-* --title "v1.2.3"
+# copy Formula/filestats.rb to highnamee/homebrew-filestats and push
+```
 
 ## Example output
 
 Default (grouped by extension):
 
 ```
-Extension            Language            Files       Size    Share
-──────────────────── ──────────────────  ──────── ──────────  ───────
-.go                  Go                      7     8.8 KB    53.8%
-.gitignore           Git                     1       19 B     7.7%
-.md                  Markdown                1     1.4 KB     7.7%
-.mod                 Go                      1      117 B     7.7%
-.sum                 Go                      1      812 B     7.7%
-.yml                 YAML                    1      150 B     7.7%
-Makefile             Make                    1      204 B     7.7%
-──────────────────── ──────────────────  ──────── ──────────  ───────
-Total                                       13    11.5 KB   100.0%
+Extension   Language      Files        Size    Share
+──────────  ────────  ─────────  ──────────  ───────  ───────────────
+.go         Go                7     12.1 KB    53.8%  █████████░░░░░░
+.gitignore  Git               1        19 B     7.7%  █░░░░░░░░░░░░░░
+.md         Markdown          1      3.2 KB     7.7%  █░░░░░░░░░░░░░░
+.mod        Go                1       117 B     7.7%  █░░░░░░░░░░░░░░
+.sum        Go                1       812 B     7.7%  █░░░░░░░░░░░░░░
+.yml        YAML              1       150 B     7.7%  █░░░░░░░░░░░░░░
+Makefile    Make              1       204 B     7.7%  █░░░░░░░░░░░░░░
+──────────  ────────  ─────────  ──────────  ───────  ───────────────
+Total                        13     16.6 KB   100.0%  ███████████████
+Completed in 3ms
 ```
 
 Grouped by language (`-l`):
 
 ```
-Language         Extension(s)            Files       Size    Share
-──────────────── ────────────────────  ──────── ──────────  ───────
-Go               .go, .mod, .sum             9     9.8 KB    69.2%
-Git              .gitignore                  1       19 B     7.7%
-Markdown         .md                         1     1.4 KB     7.7%
-YAML             .yml                        1      150 B     7.7%
-Make             Makefile                    1      204 B     7.7%
-──────────────────── ──────────────────  ──────── ──────────  ───────
-Total                                       13    11.5 KB   100.0%
+Language  Extension(s)         Files        Size    Share
+────────  ───────────────  ─────────  ──────────  ───────  ───────────────
+Go        .go, .mod, .sum          9     13.1 KB    69.2%  ███████████░░░░
+Git       .gitignore               1        19 B     7.7%  █░░░░░░░░░░░░░░
+Markdown  .md                      1      3.2 KB     7.7%  █░░░░░░░░░░░░░░
+YAML      .yml                     1       150 B     7.7%  █░░░░░░░░░░░░░░
+Make      Makefile                 1       204 B     7.7%  █░░░░░░░░░░░░░░
+────────  ───────────────  ─────────  ──────────  ───────  ───────────────
+Total                             13     16.8 KB   100.0%  ███████████████
+Completed in 2ms
 ```
 
 Results are sorted by file count descending. The `.git` directory and any paths matched by `.gitignore` are excluded.
