@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	colFile = 9 // wide enough for "1,000,000"
+	colFile = 9
 	colSize = 10
 	colPct  = 7
 )
 
-// Print writes a formatted table of file statistics to stdout.
+// Print writes a formatted, coloured table of file statistics to stdout.
 // When r.GroupedByLanguage is true, Language is shown first and Extension(s) second.
 func Print(r *Result) {
 	if r.TotalFiles == 0 {
@@ -47,46 +47,93 @@ func computeWidths(r *Result) (extW, langW int) {
 	return
 }
 
+func printRow(cols ...string) {
+	fmt.Println(strings.Join(cols, "  "))
+}
+
 func printGroupedByExt(r *Result, extW, langW int) {
-	fmt.Printf("%-*s  %-*s  %*s  %*s  %*s\n", extW, "Extension", langW, "Language", colFile, "Files", colSize, "Size", colPct, "Share")
+	printRow(
+		styleHeader.Sprint(padRight("Extension", len("Extension"), extW)),
+		styleHeader.Sprint(padRight("Language", len("Language"), langW)),
+		styleHeader.Sprint(padLeft("Files", len("Files"), colFile)),
+		styleHeader.Sprint(padLeft("Size", len("Size"), colSize)),
+		styleHeader.Sprint(padLeft("Share", len("Share"), colPct)),
+	)
 	printSeparator(extW, langW)
 	for _, stat := range r.Stats {
-		fmt.Printf("%-*s  %-*s  %*s  %*s  %*s\n",
-			extW, stat.Ext,
-			langW, stat.Language,
-			colFile, formatInt(stat.Files),
-			colSize, formatBytes(stat.Bytes),
-			colPct, formatPct(stat.Files, r.TotalFiles),
+		filesStr := formatInt(stat.Files)
+		sizeStr := formatBytes(stat.Bytes)
+		pct := float64(stat.Files) / float64(r.TotalFiles) * 100
+		printRow(
+			padRight(stat.Ext, len(stat.Ext), extW),
+			padRight(coloredLang(stat.Language), len(stat.Language), langW),
+			padLeft(filesStr, len(filesStr), colFile),
+			padLeft(sizeStr, len(sizeStr), colSize),
+			padLeft(coloredShare(pct), len(formatPct(stat.Files, r.TotalFiles)), colPct),
+			percentBar(pct),
 		)
 	}
 	printSeparator(extW, langW)
-	fmt.Printf("%-*s  %-*s  %*s  %*s  %*s\n", extW, "Total", langW, "", colFile, formatInt(r.TotalFiles), colSize, formatBytes(r.TotalBytes), colPct, "100.0%")
+	totalFilesStr := formatInt(r.TotalFiles)
+	totalSizeStr := formatBytes(r.TotalBytes)
+	printRow(
+		styleTotal.Sprint(padRight("Total", len("Total"), extW)),
+		padRight("", 0, langW),
+		styleTotal.Sprint(padLeft(totalFilesStr, len(totalFilesStr), colFile)),
+		styleTotal.Sprint(padLeft(totalSizeStr, len(totalSizeStr), colSize)),
+		styleTotal.Sprint(padLeft("100.0%", len("100.0%"), colPct)),
+		percentBar(100),
+	)
 }
 
 func printGroupedByLanguage(r *Result, extW, langW int) {
-	fmt.Printf("%-*s  %-*s  %*s  %*s  %*s\n", langW, "Language", extW, "Extension(s)", colFile, "Files", colSize, "Size", colPct, "Share")
+	printRow(
+		styleHeader.Sprint(padRight("Language", len("Language"), langW)),
+		styleHeader.Sprint(padRight("Extension(s)", len("Extension(s)"), extW)),
+		styleHeader.Sprint(padLeft("Files", len("Files"), colFile)),
+		styleHeader.Sprint(padLeft("Size", len("Size"), colSize)),
+		styleHeader.Sprint(padLeft("Share", len("Share"), colPct)),
+	)
 	printSeparator(langW, extW)
 	for _, stat := range r.Stats {
-		fmt.Printf("%-*s  %-*s  %*s  %*s  %*s\n",
-			langW, stat.Language,
-			extW, stat.Ext,
-			colFile, formatInt(stat.Files),
-			colSize, formatBytes(stat.Bytes),
-			colPct, formatPct(stat.Files, r.TotalFiles),
+		filesStr := formatInt(stat.Files)
+		sizeStr := formatBytes(stat.Bytes)
+		pct := float64(stat.Files) / float64(r.TotalFiles) * 100
+		printRow(
+			padRight(coloredLang(stat.Language), len(stat.Language), langW),
+			padRight(stat.Ext, len(stat.Ext), extW),
+			padLeft(filesStr, len(filesStr), colFile),
+			padLeft(sizeStr, len(sizeStr), colSize),
+			padLeft(coloredShare(pct), len(formatPct(stat.Files, r.TotalFiles)), colPct),
+			percentBar(pct),
 		)
 	}
 	printSeparator(langW, extW)
-	fmt.Printf("%-*s  %-*s  %*s  %*s  %*s\n", langW, "Total", extW, "", colFile, formatInt(r.TotalFiles), colSize, formatBytes(r.TotalBytes), colPct, "100.0%")
+	totalFilesStr := formatInt(r.TotalFiles)
+	totalSizeStr := formatBytes(r.TotalBytes)
+	printRow(
+		styleTotal.Sprint(padRight("Total", len("Total"), langW)),
+		padRight("", 0, extW),
+		styleTotal.Sprint(padLeft(totalFilesStr, len(totalFilesStr), colFile)),
+		styleTotal.Sprint(padLeft(totalSizeStr, len(totalSizeStr), colSize)),
+		styleTotal.Sprint(padLeft("100.0%", len("100.0%"), colPct)),
+		percentBar(100),
+	)
 }
 
 func printSeparator(w1, w2 int) {
-	fmt.Printf("%s  %s  %s  %s  %s\n",
-		strings.Repeat("─", w1),
-		strings.Repeat("─", w2),
-		strings.Repeat("─", colFile),
-		strings.Repeat("─", colSize),
-		strings.Repeat("─", colPct),
+	printRow(
+		styleDim.Sprint(strings.Repeat("─", w1)),
+		styleDim.Sprint(strings.Repeat("─", w2)),
+		styleDim.Sprint(strings.Repeat("─", colFile)),
+		styleDim.Sprint(strings.Repeat("─", colSize)),
+		styleDim.Sprint(strings.Repeat("─", colPct)),
+		styleDim.Sprint(strings.Repeat("─", barWidth)),
 	)
+}
+
+func formatPct(files, total int) string {
+	return fmt.Sprintf("%.1f%%", float64(files)/float64(total)*100)
 }
 
 func formatInt(n int) string {
@@ -99,10 +146,6 @@ func formatInt(n int) string {
 		out = append(out, byte(c))
 	}
 	return string(out)
-}
-
-func formatPct(files, total int) string {
-	return fmt.Sprintf("%.1f%%", float64(files)/float64(total)*100)
 }
 
 func formatBytes(b int64) string {
