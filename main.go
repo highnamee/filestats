@@ -12,17 +12,26 @@ import (
 	"filestats/internal/stats"
 )
 
+// version is set at build time via: -ldflags "-X main.version=x.y.z".
+var version = "dev"
+
 func main() {
 	byLang := flag.Bool("l", false, "group results by language instead of extension")
 	jsonOut := flag.Bool("json", false, "print results as JSON to stdout instead of table")
 	outFile := flag.String("o", "", "save results as JSON to `file`")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: filestats [flags] [path]\n\n")
 		flag.PrintDefaults()
 	}
 
-	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true})
+	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true, "version": true})
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("filestats %s\n", version)
+		return
+	}
 
 	root := "."
 	if flag.NArg() > 0 {
