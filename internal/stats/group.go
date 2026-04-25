@@ -12,6 +12,7 @@ func GroupByLanguage(r *Result) *Result {
 	type bucket struct {
 		exts  []string
 		files int
+		lines int64
 		bytes int64
 	}
 
@@ -27,11 +28,13 @@ func GroupByLanguage(r *Result) *Result {
 		}
 		groups[lang].exts = append(groups[lang].exts, stat.Ext)
 		groups[lang].files += stat.Files
+		groups[lang].lines += stat.Lines
 		groups[lang].bytes += stat.Bytes
 	}
 
 	result := &Result{
 		TotalFiles:        r.TotalFiles,
+		TotalLines:        r.TotalLines,
 		TotalBytes:        r.TotalBytes,
 		GroupedByLanguage: true,
 	}
@@ -42,6 +45,7 @@ func GroupByLanguage(r *Result) *Result {
 			Ext:      strings.Join(b.exts, ", "),
 			Language: lang,
 			Files:    b.files,
+			Lines:    b.lines,
 			Bytes:    b.bytes,
 		})
 	}

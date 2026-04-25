@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	colFile = 9
-	colSize = 10
-	colPct  = 7
+	colFile  = 9
+	colLines = 10
+	colSize  = 10
+	colPct   = 7
 )
 
 // Print writes a formatted, coloured table of file statistics to stdout.
@@ -56,101 +57,161 @@ func printRow(cols ...string) {
 }
 
 func printGroupedByExt(r *Result, extW, langW int) {
-	printRow(
+	showLOC := r.TotalLines > 0
+
+	hdr := []string{
 		styleHeader.Sprint(padRight("Extension", len("Extension"), extW)),
 		styleHeader.Sprint(padRight("Language", len("Language"), langW)),
 		styleHeader.Sprint(padLeft("Files", len("Files"), colFile)),
+	}
+	if showLOC {
+		hdr = append(hdr, styleHeader.Sprint(padLeft("Lines", len("Lines"), colLines)))
+	}
+	hdr = append(hdr,
 		styleHeader.Sprint(padLeft("Size", len("Size"), colSize)),
 		styleHeader.Sprint(padLeft("Share", len("Share"), colPct)),
 	)
-	printSeparator(extW, langW)
+	printRow(hdr...)
+	printSeparator(extW, langW, showLOC)
+
 	for _, stat := range r.Stats {
-		filesStr := formatInt(stat.Files)
+		filesStr := formatInt(int64(stat.Files))
+		linesStr := formatInt(stat.Lines)
 		sizeStr := formatBytes(stat.Bytes)
 		pct := float64(stat.Files) / float64(r.TotalFiles) * 100
-		printRow(
+		row := []string{
 			padRight(stat.Ext, len(stat.Ext), extW),
 			padRight(coloredLang(stat.Language), len(stat.Language), langW),
 			padLeft(filesStr, len(filesStr), colFile),
+		}
+		if showLOC {
+			row = append(row, padLeft(linesStr, len(linesStr), colLines))
+		}
+		row = append(row,
 			padLeft(sizeStr, len(sizeStr), colSize),
 			padLeft(coloredShare(pct), len(formatPct(stat.Files, r.TotalFiles)), colPct),
 			percentBar(pct),
 		)
+		printRow(row...)
 	}
-	printSeparator(extW, langW)
-	totalFilesStr := formatInt(r.TotalFiles)
+
+	printSeparator(extW, langW, showLOC)
+	totalFilesStr := formatInt(int64(r.TotalFiles))
+	totalLinesStr := formatInt(r.TotalLines)
 	totalSizeStr := formatBytes(r.TotalBytes)
-	printRow(
+	foot := []string{
 		styleTotal.Sprint(padRight("Total", len("Total"), extW)),
 		padRight("", 0, langW),
 		styleTotal.Sprint(padLeft(totalFilesStr, len(totalFilesStr), colFile)),
+	}
+	if showLOC {
+		foot = append(foot, styleTotal.Sprint(padLeft(totalLinesStr, len(totalLinesStr), colLines)))
+	}
+	foot = append(foot,
 		styleTotal.Sprint(padLeft(totalSizeStr, len(totalSizeStr), colSize)),
 		styleTotal.Sprint(padLeft("100.0%", len("100.0%"), colPct)),
 		percentBar(100),
 	)
+	printRow(foot...)
 }
 
 func printGroupedByLanguage(r *Result, extW, langW int) {
-	printRow(
+	showLOC := r.TotalLines > 0
+
+	hdr := []string{
 		styleHeader.Sprint(padRight("Language", len("Language"), langW)),
 		styleHeader.Sprint(padRight("Extension(s)", len("Extension(s)"), extW)),
 		styleHeader.Sprint(padLeft("Files", len("Files"), colFile)),
+	}
+	if showLOC {
+		hdr = append(hdr, styleHeader.Sprint(padLeft("Lines", len("Lines"), colLines)))
+	}
+	hdr = append(hdr,
 		styleHeader.Sprint(padLeft("Size", len("Size"), colSize)),
 		styleHeader.Sprint(padLeft("Share", len("Share"), colPct)),
 	)
-	printSeparator(langW, extW)
+	printRow(hdr...)
+	printSeparator(langW, extW, showLOC)
+
 	for _, stat := range r.Stats {
-		filesStr := formatInt(stat.Files)
+		filesStr := formatInt(int64(stat.Files))
+		linesStr := formatInt(stat.Lines)
 		sizeStr := formatBytes(stat.Bytes)
 		pct := float64(stat.Files) / float64(r.TotalFiles) * 100
 		extLines := wrapExts(stat.Ext, extW)
-		printRow(
+		row := []string{
 			padRight(coloredLang(stat.Language), len(stat.Language), langW),
 			padRight(extLines[0], len(extLines[0]), extW),
 			padLeft(filesStr, len(filesStr), colFile),
+		}
+		if showLOC {
+			row = append(row, padLeft(linesStr, len(linesStr), colLines))
+		}
+		row = append(row,
 			padLeft(sizeStr, len(sizeStr), colSize),
 			padLeft(coloredShare(pct), len(formatPct(stat.Files, r.TotalFiles)), colPct),
 			percentBar(pct),
 		)
+		printRow(row...)
 		for _, line := range extLines[1:] {
-			printRow(
+			cont := []string{
 				padRight("", 0, langW),
 				padRight(styleDim.Sprint(line), len(line), extW),
 				padLeft("", 0, colFile),
+			}
+			if showLOC {
+				cont = append(cont, padLeft("", 0, colLines))
+			}
+			cont = append(cont,
 				padLeft("", 0, colSize),
 				padLeft("", 0, colPct),
 			)
+			printRow(cont...)
 		}
 	}
-	printSeparator(langW, extW)
-	totalFilesStr := formatInt(r.TotalFiles)
+
+	printSeparator(langW, extW, showLOC)
+	totalFilesStr := formatInt(int64(r.TotalFiles))
+	totalLinesStr := formatInt(r.TotalLines)
 	totalSizeStr := formatBytes(r.TotalBytes)
-	printRow(
+	foot := []string{
 		styleTotal.Sprint(padRight("Total", len("Total"), langW)),
 		padRight("", 0, extW),
 		styleTotal.Sprint(padLeft(totalFilesStr, len(totalFilesStr), colFile)),
+	}
+	if showLOC {
+		foot = append(foot, styleTotal.Sprint(padLeft(totalLinesStr, len(totalLinesStr), colLines)))
+	}
+	foot = append(foot,
 		styleTotal.Sprint(padLeft(totalSizeStr, len(totalSizeStr), colSize)),
 		styleTotal.Sprint(padLeft("100.0%", len("100.0%"), colPct)),
 		percentBar(100),
 	)
+	printRow(foot...)
 }
 
-func printSeparator(w1, w2 int) {
-	printRow(
+func printSeparator(w1, w2 int, showLOC bool) {
+	cols := []string{
 		styleDim.Sprint(strings.Repeat("─", w1)),
 		styleDim.Sprint(strings.Repeat("─", w2)),
 		styleDim.Sprint(strings.Repeat("─", colFile)),
+	}
+	if showLOC {
+		cols = append(cols, styleDim.Sprint(strings.Repeat("─", colLines)))
+	}
+	cols = append(cols,
 		styleDim.Sprint(strings.Repeat("─", colSize)),
 		styleDim.Sprint(strings.Repeat("─", colPct)),
 		styleDim.Sprint(strings.Repeat("─", barWidth)),
 	)
+	printRow(cols...)
 }
 
 func formatPct(files, total int) string {
 	return fmt.Sprintf("%.1f%%", float64(files)/float64(total)*100)
 }
 
-func formatInt(n int) string {
+func formatInt(n int64) string {
 	s := fmt.Sprintf("%d", n)
 	out := make([]byte, 0, len(s)+(len(s)-1)/3)
 	for i, c := range s {

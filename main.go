@@ -23,13 +23,14 @@ func main() {
 	top := flag.Int("top", 0, "show only the top `N` results (0 = all)")
 	var excludes cli.StringsFlag
 	flag.Var(&excludes, "exclude", "exclude files/dirs matching `pattern` (glob; repeatable, comma-separated)")
+	loc := flag.Bool("loc", true, "count lines of code (disable with -loc=false for faster runs)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: filestats [flags] [path]\n\n")
 		flag.PrintDefaults()
 	}
 
-	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true, "version": true})
+	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true, "version": true, "loc": true})
 	flag.Parse()
 
 	if *showVersion {
@@ -44,7 +45,7 @@ func main() {
 
 	start := time.Now()
 
-	result, err := stats.Analyze(root, []string(excludes))
+	result, err := stats.Analyze(root, []string(excludes), *loc)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

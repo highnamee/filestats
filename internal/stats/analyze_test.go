@@ -23,13 +23,16 @@ func TestAnalyze_basic(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "README.md"), "# hello")
 	writeFile(t, filepath.Join(dir, "sub", "helper.go"), "package sub")
 
-	r, err := Analyze(dir, nil)
+	r, err := Analyze(dir, nil, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if r.TotalFiles != 4 {
 		t.Errorf("TotalFiles = %d, want 4", r.TotalFiles)
+	}
+	if r.TotalLines == 0 {
+		t.Error("TotalLines should be > 0")
 	}
 
 	counts := statsByExt(r)
@@ -47,7 +50,7 @@ func TestAnalyze_exclude_dir(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "vendor", "lib.go"), "package lib")
 	writeFile(t, filepath.Join(dir, "vendor", "dep.go"), "package dep")
 
-	r, err := Analyze(dir, []string{"vendor"})
+	r, err := Analyze(dir, []string{"vendor"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +66,7 @@ func TestAnalyze_exclude_glob(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "app.min.js"), "min")
 	writeFile(t, filepath.Join(dir, "bundle.min.js"), "min")
 
-	r, err := Analyze(dir, []string{"*.min.js"})
+	r, err := Analyze(dir, []string{"*.min.js"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +82,7 @@ func TestAnalyze_exclude_multiple(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "vendor", "a.go"), "a")
 	writeFile(t, filepath.Join(dir, "node_modules", "b.js"), "b")
 
-	r, err := Analyze(dir, []string{"vendor", "node_modules"})
+	r, err := Analyze(dir, []string{"vendor", "node_modules"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +99,7 @@ func TestAnalyze_gitignore(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "dist", "out.js"), "built")
 	writeFile(t, filepath.Join(dir, "debug.log"), "log")
 
-	r, err := Analyze(dir, nil)
+	r, err := Analyze(dir, nil, true)
 	if err != nil {
 		t.Fatal(err)
 	}

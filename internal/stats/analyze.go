@@ -2,6 +2,7 @@
 package stats
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"sync"
@@ -10,15 +11,16 @@ import (
 )
 
 type fileEntry struct {
-	key  string
-	size int64
+	key   string
+	size  int64
+	lines int64
 }
 
 // Analyze walks root recursively, counting files grouped by extension.
 // Directories and files matched by any .gitignore found in root are excluded.
 // The .git directory is always skipped. Directories are processed concurrently.
 // Entries matching any pattern in excludes are also skipped (gitignore semantics).
-func Analyze(root string, excludes []string) (*Result, error) {
+func Analyze(root string, excludes []string, loc bool) (*Result, error) {
 	gi, _ := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
 	excl := ignore.CompileIgnoreLines(excludes...)
 
@@ -56,7 +58,11 @@ func Analyze(root string, excludes []string) (*Result, error) {
 				continue
 			}
 
-			results <- fileEntry{key: groupKey(name), size: info.Size()}
+			fe := fileEntry{key: groupKey(name), size: info.Size()}
+			if loc {
+				fe.lines = countLines(filepath.Join(dir, name))
+			}
+			results <- fe
 		}
 	}
 
@@ -74,6 +80,7 @@ func Analyze(root string, excludes []string) (*Result, error) {
 			counts[fe.key] = &ExtStat{Ext: fe.key, Language: languageFor(fe.key)}
 		}
 		counts[fe.key].Files++
+		counts[fe.key].Lines += fe.lines
 		counts[fe.key].Bytes += fe.size
 	}
 
@@ -81,9 +88,48 @@ func Analyze(root string, excludes []string) (*Result, error) {
 	for _, stat := range counts {
 		result.Stats = append(result.Stats, *stat)
 		result.TotalFiles += stat.Files
+		result.TotalLines += stat.Lines
 		result.TotalBytes += stat.Bytes
 	}
 
 	sortByFiles(result.Stats)
 	return result, nil
+}
+
+// countLines counts newlines in a file. Returns 0 for binary files (detected
+// by a null byte in the first read chunk).
+func countLines(path string) int64 {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer func() { _ = f.Close() }()
+
+	buf := make([]byte, 32*1024)
+	var lines int64
+	firstChunk := true
+	var lastByte byte
+
+	for {
+		n, err := f.Read(buf)
+		if n > 0 {
+			chunk := buf[:n]
+			if firstChunk {
+				if bytes.IndexByte(chunk, 0) >= 0 {
+					return 0
+				}
+				firstChunk = false
+			}
+			lines += int64(bytes.Count(chunk, []byte{'\n'}))
+			lastByte = chunk[n-1]
+		}
+		if err != nil {
+			break
+		}
+	}
+	// File has content but the last line has no trailing newline.
+	if !firstChunk && lastByte != '\n' {
+		lines++
+	}
+	return lines
 }

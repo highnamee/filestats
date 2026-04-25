@@ -48,14 +48,16 @@ filestats -version                              # print version
 filestats -exclude vendor                       # skip vendor directory
 filestats -exclude vendor,node_modules          # skip multiple patterns
 filestats -exclude vendor -exclude "*.min.js"   # repeatable flag form
+filestats -loc=false                            # skip line counting (faster)
 ```
 
 Flags compose freely:
 
 ```bash
-filestats -l -json              # language-grouped JSON to stdout
-filestats -l -o stats.json      # language-grouped table + save JSON
-filestats -l -exclude vendor    # language-grouped, vendor excluded
+filestats -l -json                    # language-grouped JSON to stdout
+filestats -l -o stats.json            # language-grouped table + save JSON
+filestats -l -exclude vendor          # language-grouped, vendor excluded
+filestats -loc=false -exclude vendor  # fast run, no LOC column
 ```
 
 ## Options
@@ -65,6 +67,7 @@ filestats -l -exclude vendor    # language-grouped, vendor excluded
 | `-l`               | Group results by language; Extension(s) column shows a comma-separated list |
 | `-top N`           | Show only the top N results; remaining entries are aggregated into Others   |
 | `-exclude pattern` | Exclude files/dirs matching a glob pattern (repeatable, comma-separated)    |
+| `-loc=false`       | Disable line counting; hides the Lines column and speeds up large repos     |
 | `-json`            | Print results as JSON to stdout instead of table                            |
 | `-o file`          | Save results as JSON to a file (table still printed to stdout)              |
 | `-version`         | Print version and exit                                                      |
@@ -97,33 +100,33 @@ gh release create v1.2.3 dist/filestats-* --title "v1.2.3"
 Default (grouped by extension):
 
 ```
-Extension   Language      Files        Size    Share
-──────────  ────────  ─────────  ──────────  ───────  ───────────────
-.go         Go                7     12.1 KB    53.8%  █████████░░░░░░
-.gitignore  Git               1        19 B     7.7%  █░░░░░░░░░░░░░░
-.md         Markdown          1      3.2 KB     7.7%  █░░░░░░░░░░░░░░
-.mod        Go                1       117 B     7.7%  █░░░░░░░░░░░░░░
-.sum        Go                1       812 B     7.7%  █░░░░░░░░░░░░░░
-.yml        YAML              1       150 B     7.7%  █░░░░░░░░░░░░░░
-Makefile    Make              1       204 B     7.7%  █░░░░░░░░░░░░░░
-──────────  ────────  ─────────  ──────────  ───────  ───────────────
-Total                        13     16.6 KB   100.0%  ███████████████
-Completed in 3ms
+Extension   Language      Files       Lines        Size    Share
+──────────  ────────  ─────────  ──────────  ──────────  ───────  ───────────────
+.go         Go                7         420     12.1 KB    53.8%  █████████░░░░░░
+.gitignore  Git               1           2        19 B     7.7%  █░░░░░░░░░░░░░░
+.md         Markdown          1          87      3.2 KB     7.7%  █░░░░░░░░░░░░░░
+.mod        Go                1          10       117 B     7.7%  █░░░░░░░░░░░░░░
+.sum        Go                1          21       812 B     7.7%  █░░░░░░░░░░░░░░
+.yml        YAML              1          12       150 B     7.7%  █░░░░░░░░░░░░░░
+Makefile    Make              1          20       204 B     7.7%  █░░░░░░░░░░░░░░
+──────────  ────────  ─────────  ──────────  ──────────  ───────  ───────────────
+Total                        13         572     16.6 KB   100.0%  ███████████████
+Completed in 4ms
 ```
 
 Grouped by language (`-l`):
 
 ```
-Language  Extension(s)         Files        Size    Share
-────────  ───────────────  ─────────  ──────────  ───────  ───────────────
-Go        .go, .mod, .sum          9     13.1 KB    69.2%  ███████████░░░░
-Git       .gitignore               1        19 B     7.7%  █░░░░░░░░░░░░░░
-Markdown  .md                      1      3.2 KB     7.7%  █░░░░░░░░░░░░░░
-YAML      .yml                     1       150 B     7.7%  █░░░░░░░░░░░░░░
-Make      Makefile                 1       204 B     7.7%  █░░░░░░░░░░░░░░
-────────  ───────────────  ─────────  ──────────  ───────  ───────────────
-Total                             13     16.8 KB   100.0%  ███████████████
-Completed in 2ms
+Language  Extension(s)         Files       Lines        Size    Share
+────────  ───────────────  ─────────  ──────────  ──────────  ───────  ───────────────
+Go        .go, .mod, .sum          9         451     13.1 KB    69.2%  ███████████░░░░
+Git       .gitignore               1           2        19 B     7.7%  █░░░░░░░░░░░░░░
+Markdown  .md                      1          87      3.2 KB     7.7%  █░░░░░░░░░░░░░░
+YAML      .yml                     1          12       150 B     7.7%  █░░░░░░░░░░░░░░
+Make      Makefile                 1          20       204 B     7.7%  █░░░░░░░░░░░░░░
+────────  ───────────────  ─────────  ──────────  ──────────  ───────  ───────────────
+Total                             13         572     16.8 KB   100.0%  ███████████████
+Completed in 4ms
 ```
 
 Results are sorted by file count descending. The `.git` directory and any paths matched by `.gitignore` are excluded.

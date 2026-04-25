@@ -12,12 +12,14 @@ func TopN(r *Result, n int) *Result {
 	others := ExtStat{Ext: "Others", Language: ""}
 	for _, s := range r.Stats[n:] {
 		others.Files += s.Files
+		others.Lines += s.Lines
 		others.Bytes += s.Bytes
 	}
 
 	return &Result{
 		Stats:             append(append([]ExtStat{}, r.Stats[:n]...), others),
 		TotalFiles:        r.TotalFiles,
+		TotalLines:        r.TotalLines,
 		TotalBytes:        r.TotalBytes,
 		GroupedByLanguage: r.GroupedByLanguage,
 		Trimmed:           true,
