@@ -20,6 +20,8 @@ func main() {
 	jsonOut := flag.Bool("json", false, "print results as JSON to stdout instead of table")
 	outFile := flag.String("o", "", "save results as JSON to `file`")
 	showVersion := flag.Bool("version", false, "print version and exit")
+	top := flag.Int("top", 0, "show only the top `N` results (0 = all)")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: filestats [flags] [path]\n\n")
 		flag.PrintDefaults()
@@ -50,6 +52,8 @@ func main() {
 		result = stats.GroupByLanguage(result)
 	}
 
+	result = stats.TopN(result, *top)
+
 	if *jsonOut {
 		if err := stats.WriteJSON(os.Stdout, result); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -59,6 +63,11 @@ func main() {
 	}
 
 	stats.Print(result)
+	fmt.Println()
+
+	if *top > 0 {
+		fmt.Printf("Showing top %d results\n", *top)
+	}
 
 	if *outFile != "" {
 		if err := stats.SaveJSON(*outFile, result); err != nil {

@@ -14,4 +14,6 @@ type Result struct {
 	TotalFiles        int       `json:"total_files"`
 	TotalBytes        int64     `json:"total_bytes"`
 	GroupedByLanguage bool      `json:"grouped_by_language"`
+	Trimmed           bool      `json:"trimmed,omitempty"`
+	Top               int       `json:"top,omitempty"`
 }

@@ -59,6 +59,7 @@ filestats -l -o stats.json      # language-grouped table + save JSON
 | Flag         | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
 | `-l`         | Group results by language; Extension(s) column shows a comma-separated list |
+| `-top N`     | Show only the top N results; remaining entries are aggregated into Others   |
 | `-json`      | Print results as JSON to stdout instead of table                            |
 | `-o file`    | Save results as JSON to a file (table still printed to stdout)              |
 | `-version`   | Print version and exit                                                      |
