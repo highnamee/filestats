@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,15 +10,26 @@ import (
 )
 
 func main() {
+	byLang := flag.Bool("l", false, "group results by language instead of extension")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: filestats [-l] [path]\n\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
 	root := "."
-	if len(os.Args) > 1 {
-		root = os.Args[1]
+	if flag.NArg() > 0 {
+		root = flag.Arg(0)
 	}
 
 	result, err := stats.Analyze(root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if *byLang {
+		result = stats.GroupByLanguage(result)
 	}
 
 	stats.Print(result)

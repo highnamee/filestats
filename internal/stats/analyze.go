@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	ignore "github.com/sabhiram/go-gitignore"
 )
@@ -42,21 +41,18 @@ func Analyze(root string) (*Result, error) {
 			return nil
 		}
 
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext == "" {
-			ext = "(no extension)"
-		}
+		key := groupKey(d.Name())
 
 		info, err := os.Stat(path)
 		if err != nil {
 			return nil
 		}
 
-		if counts[ext] == nil {
-			counts[ext] = &ExtStat{Ext: ext}
+		if counts[key] == nil {
+			counts[key] = &ExtStat{Ext: key, Language: languageFor(key)}
 		}
-		counts[ext].Files++
-		counts[ext].Bytes += info.Size()
+		counts[key].Files++
+		counts[key].Bytes += info.Size()
 		return nil
 	})
 	if err != nil {
