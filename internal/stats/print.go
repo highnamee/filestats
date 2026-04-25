@@ -28,7 +28,8 @@ func Print(r *Result) {
 	}
 }
 
-// computeWidths returns the minimum column widths needed to fit all data without truncation.
+// computeWidths returns column widths for ext and lang.
+// When grouped by language, extW is capped so the full row fits the terminal.
 func computeWidths(r *Result) (extW, langW int) {
 	if r.GroupedByLanguage {
 		extW = len("Extension(s)")
@@ -43,6 +44,9 @@ func computeWidths(r *Result) (extW, langW int) {
 		if len(stat.Language) > langW {
 			langW = len(stat.Language)
 		}
+	}
+	if r.GroupedByLanguage && extW > maxExtWidth {
+		extW = maxExtWidth
 	}
 	return
 }
@@ -99,14 +103,24 @@ func printGroupedByLanguage(r *Result, extW, langW int) {
 		filesStr := formatInt(stat.Files)
 		sizeStr := formatBytes(stat.Bytes)
 		pct := float64(stat.Files) / float64(r.TotalFiles) * 100
+		extLines := wrapExts(stat.Ext, extW)
 		printRow(
 			padRight(coloredLang(stat.Language), len(stat.Language), langW),
-			padRight(stat.Ext, len(stat.Ext), extW),
+			padRight(extLines[0], len(extLines[0]), extW),
 			padLeft(filesStr, len(filesStr), colFile),
 			padLeft(sizeStr, len(sizeStr), colSize),
 			padLeft(coloredShare(pct), len(formatPct(stat.Files, r.TotalFiles)), colPct),
 			percentBar(pct),
 		)
+		for _, line := range extLines[1:] {
+			printRow(
+				padRight("", 0, langW),
+				padRight(styleDim.Sprint(line), len(line), extW),
+				padLeft("", 0, colFile),
+				padLeft("", 0, colSize),
+				padLeft("", 0, colPct),
+			)
+		}
 	}
 	printSeparator(langW, extW)
 	totalFilesStr := formatInt(r.TotalFiles)

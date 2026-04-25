@@ -135,3 +135,33 @@ func padLeft(s string, visLen, w int) string {
 	}
 	return s
 }
+
+// maxExtWidth is the maximum visible width for the Extension(s) column when grouped by language.
+const maxExtWidth = 40
+
+// wrapExts splits a comma-separated extension string into lines of at most maxWidth chars,
+// breaking only at ", " boundaries.
+func wrapExts(exts string, maxWidth int) []string {
+	if len(exts) <= maxWidth {
+		return []string{exts}
+	}
+	parts := strings.Split(exts, ", ")
+	var lines []string
+	var cur strings.Builder
+	for _, p := range parts {
+		if cur.Len() == 0 {
+			cur.WriteString(p)
+		} else if cur.Len()+2+len(p) <= maxWidth {
+			cur.WriteString(", ")
+			cur.WriteString(p)
+		} else {
+			lines = append(lines, cur.String())
+			cur.Reset()
+			cur.WriteString(p)
+		}
+	}
+	if cur.Len() > 0 {
+		lines = append(lines, cur.String())
+	}
+	return lines
+}
