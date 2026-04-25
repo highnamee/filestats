@@ -57,6 +57,7 @@ jobs:
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/highnamee/homebrew-filestats.git"
           git add Formula/filestats.rb
           git commit -m "filestats v${VERSION}"
           git push
