@@ -27,8 +27,17 @@ func main() {
 	gitignore := flag.Bool("respect-gitignore", true, "respect root .gitignore (disable with -respect-gitignore=false to include ignored files)")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: filestats [flags] [path]\n\n")
-		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "filestats — count files by extension or language in a directory tree.\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n  filestats [flags] [path]\n\n")
+		fmt.Fprintf(os.Stderr, "Examples:\n")
+		fmt.Fprintf(os.Stderr, "  filestats .                           count by extension in current dir\n")
+		fmt.Fprintf(os.Stderr, "  filestats -l /src                     group by language\n")
+		fmt.Fprintf(os.Stderr, "  filestats -top 10 -json -o out.json   top 10 results as JSON, also save to file\n")
+		fmt.Fprintf(os.Stderr, "  filestats -respect-gitignore=false .  include files normally ignored by .gitignore\n\n")
+		fmt.Fprintf(os.Stderr, "Flags:\n")
+		if err := cli.PrintFlagDefaults(os.Stderr); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		}
 	}
 
 	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true, "version": true, "loc": true, "respect-gitignore": true})

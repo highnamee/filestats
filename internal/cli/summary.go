@@ -32,49 +32,62 @@ func (ew *errWriter) printf(format string, args ...any) {
 	_, ew.err = fmt.Fprintf(ew.w, format, args...)
 }
 
-// PrintRunSummary writes the "--- Configuration summary" block used after a run.
+func (ew *errWriter) row(key, value string) {
+	ew.printf("  %-12s  %s\n", key, value)
+}
+
+// PrintRunSummary writes the configuration summary block after a run.
 func PrintRunSummary(w io.Writer, s RunSummary) error {
 	ew := &errWriter{w: w}
-	ew.printf("\n---\nConfiguration summary:\n")
-	ew.printf("  Path:              %s\n", s.Root)
+
+	ew.printf("\n--- Configuration ---\n")
+
+	ew.row("Path", s.Root)
+
 	if s.ByLang {
-		ew.printf("  Group by:          language (-l)\n")
+		ew.row("Group by", "language")
 	} else {
-		ew.printf("  Group by:          extension\n")
+		ew.row("Group by", "extension")
 	}
+
 	if s.JSONOut {
-		ew.printf("  Output format:     JSON (stdout, -json)\n")
+		ew.row("Output", "JSON")
 	} else {
-		ew.printf("  Output format:     table\n")
+		ew.row("Output", "table")
 	}
+
 	if s.Top > 0 {
-		ew.printf("  Limit:             top %d (-top)\n", s.Top)
+		ew.row("Limit", fmt.Sprintf("top %d", s.Top))
 	} else {
-		ew.printf("  Limit:             all rows (-top=0)\n")
+		ew.row("Limit", "all rows")
 	}
+
 	if s.OutFile != "" {
 		abs, err := filepath.Abs(s.OutFile)
 		if err != nil {
 			abs = s.OutFile
 		}
-		ew.printf("  JSON file:         %s (-o)\n", abs)
+		ew.row("JSON file", abs)
 	} else {
-		ew.printf("  JSON file:         (none)\n")
+		ew.row("JSON file", "(none)")
 	}
-	ew.printf("  Default excludes: .git/")
-	if len(s.Exclude) > 0 {
-		ew.printf("  Extra excludes:    %s (-exclude)\n", strings.Join(s.Exclude, ", "))
-	}
-	if s.LOC {
-		ew.printf("  Lines of code:     counted (-loc=true)\n")
-	} else {
-		ew.printf("  Lines of code:     skipped (-loc=false)\n")
-	}
+
+	excludes := ".git/"
 	if s.Gitignore {
-		ew.printf("  Gitignore:         respected (-respect-gitignore=true)\n")
-	} else {
-		ew.printf("  Gitignore:         ignored (-respect-gitignore=false)\n")
+		excludes += ", root .gitignore"
 	}
+	if len(s.Exclude) > 0 {
+		excludes += ", " + strings.Join(s.Exclude, ", ")
+	}
+	ew.row("Excludes", excludes)
+
+	if s.LOC {
+		ew.row("Count LOC", "yes")
+	} else {
+		ew.row("Count LOC", "no")
+	}
+
+	ew.printf("---------------------\n")
 	return ew.err
 }
 
