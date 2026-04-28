@@ -4,8 +4,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
-	"path/filepath"
 	"time"
 
 	"filestats/internal/cli"
@@ -45,7 +45,8 @@ func main() {
 
 	start := time.Now()
 
-	result, err := stats.Analyze(root, []string(excludes), *loc)
+	excludePatterns := []string(excludes)
+	result, err := stats.Analyze(root, excludePatterns, *loc)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -57,19 +58,26 @@ func main() {
 
 	result = stats.TopN(result, *top)
 
+	summary := cli.RunSummary{
+		Root:    root,
+		ByLang:  *byLang,
+		JSONOut: *jsonOut,
+		Top:     *top,
+		OutFile: *outFile,
+		Exclude: excludePatterns,
+		LOC:     *loc,
+	}
+
+	var summaryOut io.Writer = os.Stdout
 	if *jsonOut {
 		if err := stats.WriteJSON(os.Stdout, result); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		return
-	}
-
-	stats.Print(result)
-	fmt.Println()
-
-	if *top > 0 {
-		fmt.Printf("Showing top %d results\n", *top)
+		summaryOut = os.Stderr
+	} else {
+		stats.Print(result)
+		fmt.Println()
 	}
 
 	if *outFile != "" {
@@ -77,12 +85,10 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error writing %s: %v\n", *outFile, err)
 			os.Exit(1)
 		}
-		abs, err := filepath.Abs(*outFile)
-		if err != nil {
-			abs = *outFile
-		}
-		fmt.Printf("JSON saved to %s\n", abs)
 	}
 
-	fmt.Printf("Completed in %s\n", time.Since(start).Round(time.Millisecond))
+	if err := cli.PrintRunFooter(summaryOut, summary, time.Since(start)); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 }
