@@ -49,6 +49,7 @@ filestats -exclude vendor                       # skip vendor directory
 filestats -exclude vendor,node_modules          # skip multiple patterns
 filestats -exclude vendor -exclude "*.min.js"   # repeatable flag form
 filestats -loc=false                            # skip line counting (faster)
+filestats -respect-gitignore=false              # include files ignored by .gitignore
 ```
 
 Flags compose freely:
@@ -62,15 +63,16 @@ filestats -loc=false -exclude vendor  # fast run, no LOC column
 
 ## Options
 
-| Flag               | Description                                                                 |
-| ------------------ | --------------------------------------------------------------------------- |
-| `-l`               | Group results by language; Extension(s) column shows a comma-separated list |
-| `-top N`           | Show only the top N results; remaining entries are aggregated into Others   |
-| `-exclude pattern` | Exclude files/dirs matching a glob pattern (repeatable, comma-separated)    |
-| `-loc=false`       | Disable line counting; hides the Lines column and speeds up large repos     |
-| `-json`            | Print results as JSON to stdout instead of table                            |
-| `-o file`          | Save results as JSON to a file (table still printed to stdout)              |
-| `-version`         | Print version and exit                                                      |
+| Flag                       | Description                                                                 |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `-l`                       | Group results by language; Extension(s) column shows a comma-separated list |
+| `-top N`                   | Show only the top N results; remaining entries are aggregated into Others   |
+| `-exclude pattern`         | Exclude files/dirs matching a glob pattern (repeatable, comma-separated)    |
+| `-loc=false`               | Disable line counting; hides the Lines column and speeds up large repos     |
+| `-respect-gitignore=false` | Include files that would normally be excluded by the root `.gitignore`      |
+| `-json`                    | Print results as JSON to stdout instead of table                            |
+| `-o file`                  | Save results as JSON to a file (table still printed to stdout)              |
+| `-version`                 | Print version and exit                                                      |
 
 ## Example output
 
@@ -88,6 +90,16 @@ Extension   Language      Files       Lines        Size    Share
 Makefile    Make              1          20       204 B     7.7%  █░░░░░░░░░░░░░░
 ──────────  ────────  ─────────  ──────────  ──────────  ───────  ───────────────
 Total                        13         572     16.6 KB   100.0%  ███████████████
+
+--- Configuration ---
+  Path          .
+  Group by      extension
+  Output        table
+  Limit         all rows
+  JSON file     (none)
+  Excludes      .git/, root .gitignore
+  Count LOC     yes
+---------------------
 Completed in 4ms
 ```
 
@@ -103,7 +115,17 @@ YAML      .yml                     1          12       150 B     7.7%  █░░
 Make      Makefile                 1          20       204 B     7.7%  █░░░░░░░░░░░░░░
 ────────  ───────────────  ─────────  ──────────  ──────────  ───────  ───────────────
 Total                             13         572     16.8 KB   100.0%  ███████████████
+
+--- Configuration ---
+  Path          .
+  Group by      language
+  Output        table
+  Limit         all rows
+  JSON file     (none)
+  Excludes      .git/, root .gitignore
+  Count LOC     yes
+---------------------
 Completed in 4ms
 ```
 
-Results are sorted by file count descending. The `.git` directory and any paths matched by `.gitignore` are excluded.
+Results are sorted by file count descending. The `.git` directory and any paths matched by the root `.gitignore` are excluded by default (disable with `-respect-gitignore=false`).
