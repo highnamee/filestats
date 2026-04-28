@@ -23,7 +23,7 @@ func TestAnalyze_basic(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "README.md"), "# hello")
 	writeFile(t, filepath.Join(dir, "sub", "helper.go"), "package sub")
 
-	r, err := Analyze(dir, nil, true)
+	r, err := Analyze(dir, nil, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestAnalyze_exclude_dir(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "vendor", "lib.go"), "package lib")
 	writeFile(t, filepath.Join(dir, "vendor", "dep.go"), "package dep")
 
-	r, err := Analyze(dir, []string{"vendor"}, false)
+	r, err := Analyze(dir, []string{"vendor"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestAnalyze_exclude_glob(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "app.min.js"), "min")
 	writeFile(t, filepath.Join(dir, "bundle.min.js"), "min")
 
-	r, err := Analyze(dir, []string{"*.min.js"}, false)
+	r, err := Analyze(dir, []string{"*.min.js"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestAnalyze_exclude_multiple(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "vendor", "a.go"), "a")
 	writeFile(t, filepath.Join(dir, "node_modules", "b.js"), "b")
 
-	r, err := Analyze(dir, []string{"vendor", "node_modules"}, false)
+	r, err := Analyze(dir, []string{"vendor", "node_modules"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,12 +99,11 @@ func TestAnalyze_gitignore(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "dist", "out.js"), "built")
 	writeFile(t, filepath.Join(dir, "debug.log"), "log")
 
-	r, err := Analyze(dir, nil, true)
+	r, err := Analyze(dir, nil, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Only main.go should be counted; .gitignore itself is also counted.
 	counts := statsByExt(r)
 	if counts[".go"] != 1 {
 		t.Errorf(".go count = %d, want 1", counts[".go"])
@@ -114,6 +113,27 @@ func TestAnalyze_gitignore(t *testing.T) {
 	}
 	if counts[".log"] != 0 {
 		t.Errorf(".log count = %d, want 0 (*.log gitignored)", counts[".log"])
+	}
+}
+
+func TestAnalyze_gitignore_disabled(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".gitignore"), "dist/\n*.log\n")
+	writeFile(t, filepath.Join(dir, "main.go"), "package main")
+	writeFile(t, filepath.Join(dir, "dist", "out.js"), "built")
+	writeFile(t, filepath.Join(dir, "debug.log"), "log")
+
+	r, err := Analyze(dir, nil, false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	counts := statsByExt(r)
+	if counts[".js"] != 1 {
+		t.Errorf(".js count = %d, want 1 (gitignore disabled)", counts[".js"])
+	}
+	if counts[".log"] != 1 {
+		t.Errorf(".log count = %d, want 1 (gitignore disabled)", counts[".log"])
 	}
 }
 

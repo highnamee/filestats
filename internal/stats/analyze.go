@@ -17,11 +17,14 @@ type fileEntry struct {
 }
 
 // Analyze walks root recursively, counting files grouped by extension.
-// Directories and files matched by any .gitignore found in root are excluded.
 // The .git directory is always skipped. Directories are processed concurrently.
 // Entries matching any pattern in excludes are also skipped (gitignore semantics).
-func Analyze(root string, excludes []string, loc bool) (*Result, error) {
-	gi, _ := ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
+// When respectGitignore is true, the root .gitignore is also applied.
+func Analyze(root string, excludes []string, loc bool, respectGitignore bool) (*Result, error) {
+	var gi *ignore.GitIgnore
+	if respectGitignore {
+		gi, _ = ignore.CompileIgnoreFile(filepath.Join(root, ".gitignore"))
+	}
 	excl := ignore.CompileIgnoreLines(excludes...)
 
 	results := make(chan fileEntry, 512)

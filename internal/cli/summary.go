@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -11,13 +10,14 @@ import (
 
 // RunSummary holds effective CLI options for the configuration footer.
 type RunSummary struct {
-	Root    string
-	ByLang  bool
-	JSONOut bool
-	Top     int
-	OutFile string
-	Exclude []string
-	LOC     bool
+	Root      string
+	ByLang    bool
+	JSONOut   bool
+	Top       int
+	OutFile   string
+	Exclude   []string
+	LOC       bool
+	Gitignore bool
 }
 
 type errWriter struct {
@@ -30,13 +30,6 @@ func (ew *errWriter) printf(format string, args ...any) {
 		return
 	}
 	_, ew.err = fmt.Fprintf(ew.w, format, args...)
-}
-
-func formatDefaultExcludes(root string) string {
-	if _, err := os.Stat(filepath.Join(root, ".gitignore")); err != nil {
-		return ".git/"
-	}
-	return ".git/; Files/Folders in root .gitignore"
 }
 
 // PrintRunSummary writes the "--- Configuration summary" block used after a run.
@@ -68,7 +61,7 @@ func PrintRunSummary(w io.Writer, s RunSummary) error {
 	} else {
 		ew.printf("  JSON file:         (none)\n")
 	}
-	ew.printf("  Default excludes:  %s\n", formatDefaultExcludes(s.Root))
+	ew.printf("  Default excludes: .git/")
 	if len(s.Exclude) > 0 {
 		ew.printf("  Extra excludes:    %s (-exclude)\n", strings.Join(s.Exclude, ", "))
 	}
@@ -76,6 +69,11 @@ func PrintRunSummary(w io.Writer, s RunSummary) error {
 		ew.printf("  Lines of code:     counted (-loc=true)\n")
 	} else {
 		ew.printf("  Lines of code:     skipped (-loc=false)\n")
+	}
+	if s.Gitignore {
+		ew.printf("  Gitignore:         respected (-respect-gitignore=true)\n")
+	} else {
+		ew.printf("  Gitignore:         ignored (-respect-gitignore=false)\n")
 	}
 	return ew.err
 }

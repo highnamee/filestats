@@ -24,13 +24,14 @@ func main() {
 	var excludes cli.StringsFlag
 	flag.Var(&excludes, "exclude", "exclude files/dirs matching `pattern` (glob; repeatable, comma-separated)")
 	loc := flag.Bool("loc", true, "count lines of code (disable with -loc=false for faster runs)")
+	gitignore := flag.Bool("respect-gitignore", true, "respect root .gitignore (disable with -respect-gitignore=false to include ignored files)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: filestats [flags] [path]\n\n")
 		flag.PrintDefaults()
 	}
 
-	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true, "version": true, "loc": true})
+	os.Args = cli.ReorderArgs(os.Args, map[string]bool{"l": true, "json": true, "version": true, "loc": true, "respect-gitignore": true})
 	flag.Parse()
 
 	if *showVersion {
@@ -46,7 +47,7 @@ func main() {
 	start := time.Now()
 
 	excludePatterns := []string(excludes)
-	result, err := stats.Analyze(root, excludePatterns, *loc)
+	result, err := stats.Analyze(root, excludePatterns, *loc, *gitignore)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -59,13 +60,14 @@ func main() {
 	result = stats.TopN(result, *top)
 
 	summary := cli.RunSummary{
-		Root:    root,
-		ByLang:  *byLang,
-		JSONOut: *jsonOut,
-		Top:     *top,
-		OutFile: *outFile,
-		Exclude: excludePatterns,
-		LOC:     *loc,
+		Root:      root,
+		ByLang:    *byLang,
+		JSONOut:   *jsonOut,
+		Top:       *top,
+		OutFile:   *outFile,
+		Exclude:   excludePatterns,
+		LOC:       *loc,
+		Gitignore: *gitignore,
 	}
 
 	var summaryOut io.Writer = os.Stdout
